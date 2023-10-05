@@ -102,6 +102,39 @@ class TrainablePositionalEncoding(nn.Module):
         position_embeddings = self.position_embeddings(position_ids)
         return input_feat + position_embeddings
 
+class TrainablePositionalEncoding2D(nn.Module):
+    """构建来自单词、位置和令牌类型嵌入的嵌入。"""
+    def __init__(self, max_position_embeddings_height, max_position_embeddings_width, hidden_size, dropout=0.1):
+        super(TrainablePositionalEncoding2D, self).__init__()
+        self.position_embeddings_height = nn.Embedding(max_position_embeddings_height, hidden_size)
+        self.position_embeddings_width = nn.Embedding(max_position_embeddings_width, hidden_size)
+        self.LayerNorm = nn.LayerNorm(hidden_size)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, input_feat):
+        bsz, height, width, seq_length = input_feat.shape
+        position_ids_height = torch.arange(height, dtype=torch.long, device=input_feat.device)
+        position_ids_width = torch.arange(width, dtype=torch.long, device=input_feat.device)
+        position_ids_height = position_ids_height.unsqueeze(0).unsqueeze(2).repeat(bsz, 1, width, seq_length)  # (N, H, W, L)
+        position_ids_width = position_ids_width.unsqueeze(0).unsqueeze(1).repeat(bsz, height, 1, seq_length)  # (N, H, W, L)
+        position_embeddings_height = self.position_embeddings_height(position_ids_height)
+        position_embeddings_width = self.position_embeddings_width(position_ids_width)
+        position_embeddings = position_embeddings_height + position_embeddings_width
+        embeddings = self.LayerNorm(input_feat + position_embeddings)
+        embeddings = self.dropout(embeddings)
+        return embeddings
+
+    def add_position_emb(self, input_feat):
+        bsz, height, width, seq_length = input_feat.shape
+        position_ids_height = torch.arange(height, dtype=torch.long, device=input_feat.device)
+        position_ids_width = torch.arange(width, dtype=torch.long, device=input_feat.device)
+        position_ids_height = position_ids_height.unsqueeze(0).unsqueeze(2).repeat(bsz, 1, width, seq_length)  # (N, H, W, L)
+        position_ids_width = position_ids_width.unsqueeze(0).unsqueeze(1).repeat(bsz, height, 1, seq_length)  # (N, H, W, L)
+        position_embeddings_height = self.position_embeddings_height(position_ids_height)
+        position_embeddings_width = self.position_embeddings_width(position_ids_width)
+        position_embeddings = position_embeddings_height + position_embeddings_width
+        return input_feat + position_embeddings
+
 
 class LinearLayer(nn.Module):
     """linear layer configurable with layer normalization, dropout, ReLU."""

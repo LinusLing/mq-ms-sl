@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from easydict import EasyDict as edict
-from method.model_components import BertAttention, LinearLayer, BertSelfAttention, TrainablePositionalEncoding
+from method.model_components import BertAttention, LinearLayer, BertSelfAttention, TrainablePositionalEncoding, TrainablePositionalEncoding2D
 from method.model_components import clip_nce, frame_nce
 
 
@@ -16,9 +16,9 @@ class MS_SL_Net(nn.Module):
 
         self.query_pos_embed = TrainablePositionalEncoding(max_position_embeddings=config.max_desc_l,
                                                            hidden_size=config.hidden_size, dropout=config.input_drop)
-        self.clip_pos_embed = TrainablePositionalEncoding(max_position_embeddings=config.max_ctx_l,
-                                                         hidden_size=config.hidden_size, dropout=config.input_drop)
-        self.frame_pos_embed = TrainablePositionalEncoding(max_position_embeddings=config.max_ctx_l,
+        self.clip_pos_embed = TrainablePositionalEncoding2D(max_position_embeddings_height=config.max_ctx_l, max_position_embeddings_width=config.max_clip_l,
+                                                            hidden_size=config.hidden_size, dropout=config.input_drop)
+        self.frame_pos_embed = TrainablePositionalEncoding2D(max_position_embeddings_height=config.max_ctx_l, max_position_embeddings_width=config.max_clip_l,
                                                           hidden_size=config.hidden_size, dropout=config.input_drop)
         #
         self.query_input_proj = LinearLayer(config.query_input_size, config.hidden_size, layer_norm=True,
