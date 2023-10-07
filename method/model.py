@@ -16,9 +16,9 @@ class MS_SL_Net(nn.Module):
 
         self.query_pos_embed = TrainablePositionalEncoding(max_position_embeddings=config.max_desc_l,
                                                            hidden_size=config.hidden_size, dropout=config.input_drop)
-        self.clip_pos_embed = TrainablePositionalEncoding2D(max_position_embeddings_height=config.max_ctx_l, max_position_embeddings_width=config.max_clip_l,
+        self.clip_pos_embed = TrainablePositionalEncoding2D(max_position_embeddings_height=config.max_ctx_l, max_position_embeddings_width=config.max_ctx_l,
                                                             hidden_size=config.hidden_size, dropout=config.input_drop)
-        self.frame_pos_embed = TrainablePositionalEncoding2D(max_position_embeddings_height=config.max_ctx_l, max_position_embeddings_width=config.max_clip_l,
+        self.frame_pos_embed = TrainablePositionalEncoding2D(max_position_embeddings_height=config.max_ctx_l, max_position_embeddings_width=config.max_ctx_l,
                                                           hidden_size=config.hidden_size, dropout=config.input_drop)
         # text 的 FC 层
         self.query_input_proj = LinearLayer(config.query_input_size, config.hidden_size, layer_norm=True,
