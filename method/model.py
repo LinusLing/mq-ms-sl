@@ -20,15 +20,15 @@ class MS_SL_Net(nn.Module):
                                                             hidden_size=config.hidden_size, dropout=config.input_drop)
         self.frame_pos_embed = TrainablePositionalEncoding2D(max_position_embeddings_height=config.max_ctx_l, max_position_embeddings_width=config.max_clip_l,
                                                           hidden_size=config.hidden_size, dropout=config.input_drop)
-        #
+        # text 的 FC 层
         self.query_input_proj = LinearLayer(config.query_input_size, config.hidden_size, layer_norm=True,
                                             dropout=config.input_drop, relu=True)
-        #
+        # text 的 Transformer + Attention 层
         self.query_encoder = BertAttention(edict(hidden_size=config.hidden_size, intermediate_size=config.hidden_size,
                                                  hidden_dropout_prob=config.drop, num_attention_heads=config.n_heads,
                                                  attention_probs_dropout_prob=config.drop))
 
-
+        # video 的 FC 层
         self.clip_input_proj = LinearLayer(config.visual_input_size, config.hidden_size, layer_norm=True,
                                             dropout=config.input_drop, relu=True)
         self.clip_encoder = copy.deepcopy(self.query_encoder)
@@ -39,11 +39,9 @@ class MS_SL_Net(nn.Module):
 
         self.modular_vector_mapping = nn.Linear(config.hidden_size, out_features=1, bias=False)
 
-
-        self.pool_layers = nn.ModuleList([nn.Identity()]
-                                         + [nn.AvgPool1d(i, stride=1) for i in range(2, config.map_size + 1)]
-                                         )
-
+        # config.map_size 给定的滑动窗口大小，用于对滑动窗口内的特征进行平均池化
+        self.pool_layers = nn.ModuleList([nn.Identity()] + [nn.AvgPool1d(i, stride=1) for i in range(2, config.map_size + 1)])
+        # 论文中 K 和 Z 前的 FC 层
         self.mapping_linear = nn.ModuleList([nn.Linear(config.hidden_size, out_features=config.hidden_size, bias=False)
                                              for i in range(2)])
 
@@ -115,6 +113,7 @@ class MS_SL_Net(nn.Module):
 
 
     def encode_query(self, query_feat, query_mask):
+        # 论文中的 q
         encoded_query = self.encode_input(query_feat, query_mask, self.query_input_proj, self.query_encoder,
                                           self.query_pos_embed)  # (N, Lq, D)
         video_query = self.get_modularized_queries(encoded_query, query_mask)  # (N, D) * 1
@@ -123,14 +122,14 @@ class MS_SL_Net(nn.Module):
 
     def encode_context(self, clip_video_feat, frame_video_feat, video_mask=None):
 
-
+        # encoded_clip_feat 就是 clip construction 操作前得到的特征
         encoded_clip_feat = self.encode_input(clip_video_feat, None, self.clip_input_proj, self.clip_encoder,
                                                self.clip_pos_embed)
-
+        # 论文中的 F
         encoded_frame_feat = self.encode_input(frame_video_feat, video_mask, self.frame_input_proj,
                                                 self.frame_encoder,
                                                 self.frame_pos_embed)
-
+        # 执行 clip construction 操作，得到横向拼接后的总特征 vid_proposal_feat_map（论文中的 C）
         vid_proposal_feat_map = self.encode_feat_map(encoded_clip_feat)
 
 
@@ -196,13 +195,13 @@ class MS_SL_Net(nn.Module):
 
     @staticmethod
     def get_unnormalized_clip_scale_scores(modularied_query, context_feat):
-
+        # 论文中的 ⊙ 操作
         query_context_scores = torch.matmul(context_feat, modularied_query.t()).permute(2, 1, 0)
-
+        # 论文中的 max 操作
         query_context_scores, _ = torch.max(query_context_scores, dim=1)
 
         return query_context_scores
-
+    # 论文中的 KCGA 操作
     def key_clip_guided_attention(self, frame_feat, proposal_feat, feat_mask, max_index, query_labels):
         selected_max_index = max_index[[i for i in range(max_index.shape[0])], query_labels]
 
@@ -210,16 +209,16 @@ class MS_SL_Net(nn.Module):
 
         expand_proposal_feat = proposal_feat[query_labels]
 
-        key = self.mapping_linear[0](expand_frame_feat)
+        key = self.mapping_linear[0](expand_frame_feat) # 论文中的 K
         query = expand_proposal_feat[[i for i in range(key.shape[0])], selected_max_index, :].unsqueeze(-1)
-        value = self.mapping_linear[1](expand_frame_feat)
+        value = self.mapping_linear[1](expand_frame_feat) # 论文中的 Z
 
         if feat_mask is not None:
             expand_feat_mask = feat_mask[query_labels]
             scores = torch.bmm(key, query).squeeze()
             masked_scores = scores.masked_fill(expand_feat_mask.eq(0), -1e9).unsqueeze(1)
             masked_scores = nn.Softmax(dim=-1)(masked_scores)
-            attention_feat = torch.bmm(masked_scores, value).squeeze()
+            attention_feat = torch.bmm(masked_scores, value).squeeze() # weighted sum 操作，得到 attention_feat 就是论文中的 r
         else:
             scores = nn.Softmax(dim=-1)(torch.bmm(key, query).transpose(1, 2))
             attention_feat = torch.bmm(scores, value).squeeze()
@@ -253,20 +252,23 @@ class MS_SL_Net(nn.Module):
                                 video_feat_mask=None,
                                 return_query_feats=False):
 
-
+        # video_query 论文中的 q
         video_query = self.encode_query(query_feat, query_mask)
 
         # get clip-level retrieval scores
-
+        # clip_scale_scores 论文中的 Sc（normalized）
         clip_scale_scores, key_clip_indices = self.get_clip_scale_scores(
             video_query, video_proposal_feat)
 
         if return_query_feats:
+            # frame_scale_feat 论文中的 r
             frame_scale_feat = self.key_clip_guided_attention(video_feat, video_proposal_feat, video_feat_mask,
                                                           key_clip_indices, query_labels)
-            frame_scale_scores = torch.matmul(F.normalize(video_query, dim=-1),
-                                              F.normalize(frame_scale_feat, dim=-1).t())
+            # frame_scale_scores 论文中的 Sf（normalized）
+            frame_scale_scores = torch.matmul(F.normalize(video_query, dim=-1), F.normalize(frame_scale_feat, dim=-1).t())
+            # clip_scale_scores_ 论文中的 Sc（non-normalized）
             clip_scale_scores_ = self.get_unnormalized_clip_scale_scores(video_query, video_proposal_feat)
+            # frame_scale_scores 论文中的 Sf（non-normalized）
             frame_scale_scores_ = torch.matmul(video_query, frame_scale_feat.t())
 
             return clip_scale_scores, frame_scale_scores, clip_scale_scores_,frame_scale_scores_
