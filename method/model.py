@@ -84,7 +84,7 @@ class MS_SL_Net(nn.Module):
             clip_video_feat, frame_video_feat, frame_video_mask)
         clip_scale_scores, frame_scale_scores, clip_scale_scores_, frame_scale_scores_ \
             = self.get_pred_from_raw_query(
-            query_feat, query_mask, query_labels, vid_proposal_feat, encoded_frame_feat, frame_video_mask, cross=False,
+            query_feat, query_mask, query_labels, vid_proposal_feat, encoded_frame_feat, frame_video_mask,
             return_query_feats=True)
 
         label_dict = {}
