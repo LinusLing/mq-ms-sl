@@ -184,7 +184,7 @@ def cal_perf(t2v_all_errors, t2v_gt):
 
 
     logging.info(" * Text to Video:")
-    logging.info(" * r_1_5_10_100, medr, meanr: {}".format([round(t2v_r1, 1), round(t2v_r5, 1), round(t2v_r10, 1), round(t2v_r100, 1)]))
+    logging.info(" * r_1_5_10_100: {}, medr: {}, meanr: {}".format([round(t2v_r1, 1), round(t2v_r5, 1), round(t2v_r10, 1), round(t2v_r100, 1)],t2v_medr, t2v_meanr))
     logging.info(" * recall sum: {}".format(round(t2v_r1+t2v_r5+t2v_r10+t2v_r100, 1)))
     logging.info(" * mAP: {}".format(round(t2v_map_score, 4)))
     logging.info(" * "+'-'*10)
