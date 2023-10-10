@@ -164,7 +164,7 @@ def train(model, train_dataset, val_video_dataset, val_text_dataset, opt):
             checkpoint = {"model": model.state_dict(), "model_cfg": model.config, "epoch": epoch_i}
             torch.save(checkpoint, opt.ckpt_filepath)
 
-            logger.info("The checkpoint file has been updated.")
+            logger.info("The checkpoint file has been updated. epoch {}".format(epoch_i))
         else:
             es_cnt += 1
             if opt.max_es_cnt != -1 and es_cnt > opt.max_es_cnt:  # early stop
