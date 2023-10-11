@@ -83,7 +83,7 @@ class MS_SL_Net(nn.Module):
     def forward(self, clip_video_feat, frame_video_feat, frame_video_mask, query_feat, query_mask, query_labels):
 
 
-
+        # frame_video_feat 论文中的 V
         encoded_frame_feat, vid_proposal_feat = self.encode_context(
             clip_video_feat, frame_video_feat, frame_video_mask)
         clip_scale_scores, frame_scale_scores, clip_scale_scores_, frame_scale_scores_ \
@@ -117,11 +117,11 @@ class MS_SL_Net(nn.Module):
 
 
     def encode_query(self, query_feat, query_mask):
-        # 论文中的 q
         encoded_query = self.encode_input(query_feat, query_mask, self.query_input_proj, self.query_encoder,
                                           self.query_pos_embed)  # (N, Lq, D)
+        # 论文中的 Attention 操作
         video_query = self.get_modularized_queries(encoded_query, query_mask)  # (N, D) * 1
-
+        # video_query 论文中的 q
         return video_query
 
     def encode_context(self, clip_video_feat, frame_video_feat, video_mask=None):
@@ -165,6 +165,8 @@ class MS_SL_Net(nn.Module):
             encoder_layer: encoder layer
             pos_embed_layer: positional embedding layer
         """
+
+        # 论文中的 FC + Transformer 操作
         feat = input_proj_layer(feat)
         feat = pos_embed_layer(feat)
         if mask is not None:
