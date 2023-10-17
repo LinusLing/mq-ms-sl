@@ -20,16 +20,16 @@ class BaseOptions(object):
 
     def initialize(self):
         self.initialized = True
-        self.parser.add_argument("--dset_name", type=str)
+        self.parser.add_argument("--dset_name", type=str, default='charades')
         self.parser.add_argument("--eval_split_name", type=str, default="val")
         self.parser.add_argument("--debug", action="store_true",
                                  help="debug (fast) mode, break all loops, do not load all data into memory.")
 
         self.parser.add_argument("--results_root", type=str, default="results")
-        self.parser.add_argument("--exp_id", type=str, default=None, help="id of this run, required at training")
+        self.parser.add_argument("--exp_id", type=str, default='run_0', help="id of this run, required at training")
         self.parser.add_argument("--seed", type=int, default=2018, help="random seed")
         self.parser.add_argument("--device", type=int, default=0, help="0 cuda, -1 cpu")
-        self.parser.add_argument("--device_ids", type=int, nargs="+", default=[1], help="GPU ids to run the job")
+        self.parser.add_argument("--device_ids", type=int, nargs="+", default=[0], help="GPU ids to run the job")
         self.parser.add_argument("--num_workers", type=int, default=8,
                                  help="num subprocesses used to load the data, 0: use main process")
         self.parser.add_argument("--no_core_driver", action="store_true",
@@ -87,13 +87,13 @@ class BaseOptions(object):
         # post processing
 
         self.parser.add_argument("--model_name", type=str, default='MS_SL_Net')
-        self.parser.add_argument('--root_path', type=str)
-        self.parser.add_argument('--visual_feature', type=str)
-        self.parser.add_argument('--collection', type=str)
+        self.parser.add_argument('--root_path', type=str, default='/home/featurize/data')
+        self.parser.add_argument('--visual_feature', type=str, default='i3d_rgb_lgi')
+        self.parser.add_argument('--collection', type=str, default='charades')
         self.parser.add_argument("--map_size", type=int, default=32)
         self.parser.add_argument('--use_sub', type=bool, default=False)
-        self.parser.add_argument('--clip_scale_w', type=float, default=0.7)
-        self.parser.add_argument('--frame_scale_w', type=float, default=0.3)
+        self.parser.add_argument('--clip_scale_w', type=float, default=0.5)
+        self.parser.add_argument('--frame_scale_w', type=float, default=0.5)
     def display_save(self, opt):
         args = vars(opt)
         # Display settings

@@ -113,7 +113,7 @@ class TrainablePositionalEncoding2D(nn.Module):
 
     def forward(self, input_feat):
         print(f'input_feat.shape:{input_feat.shape} {input_feat.shape[0]} {input_feat.shape[1]} {input_feat.shape[2]}')
-        bsz, height, width, seq_length = input_feat.shape[0], 88, 88, input_feat.shape[1]
+        bsz, height, width, seq_length = input_feat.shape[0], 64, 64, input_feat.shape[1]
         position_ids_height = torch.arange(seq_length, dtype=torch.long, device=input_feat.device)
         position_ids_width = torch.arange(seq_length, dtype=torch.long, device=input_feat.device)
         print(f'1position_ids_height.shape:{position_ids_height.shape}')
