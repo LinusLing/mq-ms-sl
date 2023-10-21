@@ -14,7 +14,7 @@ class MS_SL_Net(nn.Module):
         super(MS_SL_Net, self).__init__()
         self.config = config
 
-        self.query_pos_embed = TrainablePositionalEncoding(max_position_embeddings=config.max_desc_l,
+        self.query_pos_embed = TrainablePositionalEncoding2D(max_position_embeddings_height=config.max_desc_l, max_position_embeddings_width=config.max_desc_l,
                                                            hidden_size=config.hidden_size, dropout=config.input_drop)
         self.clip_pos_embed = TrainablePositionalEncoding2D(max_position_embeddings_height=config.max_ctx_l, max_position_embeddings_width=config.max_ctx_l,
                                                             hidden_size=config.hidden_size, dropout=config.input_drop)
