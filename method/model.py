@@ -4,9 +4,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from easydict import EasyDict as edict
-from method.model_components import BertAttention, LinearLayer, BertSelfAttention, TrainablePositionalEncoding, TrainablePositionalEncoding2D
+from method.model_components import BertAttention, LinearLayer, BertSelfAttention, TrainablePositionalEncoding, TrainablePositionalEncoding2D, WindowAttention
 from method.model_components import clip_nce, frame_nce
-
+from timm.models.layers import to_2tuple
 
 
 class MS_SL_Net(nn.Module):
@@ -20,6 +20,8 @@ class MS_SL_Net(nn.Module):
                                                             hidden_size=config.hidden_size, dropout=config.input_drop)
         self.frame_pos_embed = TrainablePositionalEncoding2D(max_position_embeddings_height=config.max_ctx_l, max_position_embeddings_width=config.max_ctx_l,
                                                           hidden_size=config.hidden_size, dropout=config.input_drop)
+        # self.query_pos_embed = TrainablePositionalEncoding(max_position_embeddings=config.max_desc_l,
+        #                                                      hidden_size=config.hidden_size, dropout=config.input_drop)
         #self.clip_pos_embed = TrainablePositionalEncoding(max_position_embeddings=config.max_ctx_l,
         #                                                    hidden_size=config.hidden_size, dropout=config.input_drop)
         #self.frame_pos_embed = TrainablePositionalEncoding(max_position_embeddings=config.max_ctx_l,
@@ -28,10 +30,12 @@ class MS_SL_Net(nn.Module):
         self.query_input_proj = LinearLayer(config.query_input_size, config.hidden_size, layer_norm=True,
                                             dropout=config.input_drop, relu=True)
         # text 的 Transformer + Attention 层
-        self.query_encoder = BertAttention(edict(hidden_size=config.hidden_size, intermediate_size=config.hidden_size,
-                                                 hidden_dropout_prob=config.drop, num_attention_heads=config.n_heads,
-                                                 attention_probs_dropout_prob=config.drop))
-
+        # self.query_encoder = BertAttention(edict(hidden_size=config.hidden_size, intermediate_size=config.hidden_size,
+        #                                          hidden_dropout_prob=config.drop, num_attention_heads=config.n_heads,
+        #                                          attention_probs_dropout_prob=config.drop))
+        self.query_encoder = WindowAttention(dim=config.hidden_size, window_size=to_2tuple(7), num_heads=config.n_heads,
+                                             qkv_bias=True, attn_drop=config.drop, proj_drop=config.drop,
+                                             pretrained_window_size=to_2tuple(0))
         # video 的 FC 层
         self.clip_input_proj = LinearLayer(config.visual_input_size, config.hidden_size, layer_norm=True,
                                             dropout=config.input_drop, relu=True)
