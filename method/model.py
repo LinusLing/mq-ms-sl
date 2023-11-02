@@ -4,10 +4,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from easydict import EasyDict as edict
-from method.model_components import BertAttention, LinearLayer, BertSelfAttention, TrainablePositionalEncoding, TrainablePositionalEncoding2D, WindowAttention
+from method.model_components import BertAttention, LinearLayer, BertSelfAttention, \
+    TrainablePositionalEncoding, TrainablePositionalEncoding2D, WindowAttention, \
+    ContextualizedWeightedHead
 from method.model_components import clip_nce, frame_nce
 from timm.models.layers import to_2tuple
-
 
 class MS_SL_Net(nn.Module):
     def __init__(self, config):
@@ -26,16 +27,27 @@ class MS_SL_Net(nn.Module):
         #                                                    hidden_size=config.hidden_size, dropout=config.input_drop)
         #self.frame_pos_embed = TrainablePositionalEncoding(max_position_embeddings=config.max_ctx_l,
         #                                                  hidden_size=config.hidden_size, dropout=config.input_drop)
+        args = {
+                    "d_model": 512,
+                    "nhead": 8,
+                    "num_layers": 2,
+                    "fc_dim_list": [
+                        512,
+                        512,
+                        1
+                    ]
+                }
+        self.text_head = ContextualizedWeightedHead(**args)
         # text 的 FC 层
         self.query_input_proj = LinearLayer(config.query_input_size, config.hidden_size, layer_norm=True,
                                             dropout=config.input_drop, relu=True)
         # text 的 Transformer + Attention 层
-        # self.query_encoder = BertAttention(edict(hidden_size=config.hidden_size, intermediate_size=config.hidden_size,
-        #                                          hidden_dropout_prob=config.drop, num_attention_heads=config.n_heads,
-        #                                          attention_probs_dropout_prob=config.drop))
-        self.query_encoder = WindowAttention(dim=config.hidden_size, window_size=to_2tuple(7), num_heads=config.n_heads,
-                                             qkv_bias=True, attn_drop=config.drop, proj_drop=config.drop,
-                                             pretrained_window_size=to_2tuple(0))
+        self.query_encoder = BertAttention(edict(hidden_size=config.hidden_size, intermediate_size=config.hidden_size,
+                                                 hidden_dropout_prob=config.drop, num_attention_heads=config.n_heads,
+                                                 attention_probs_dropout_prob=config.drop))
+        # self.query_encoder = WindowAttention(dim=config.hidden_size, window_size=to_2tuple(7), num_heads=config.n_heads,
+        #                                      qkv_bias=True, attn_drop=config.drop, proj_drop=config.drop,
+        #                                      pretrained_window_size=to_2tuple(0))
         # video 的 FC 层
         self.clip_input_proj = LinearLayer(config.visual_input_size, config.hidden_size, layer_norm=True,
                                             dropout=config.input_drop, relu=True)
@@ -123,10 +135,11 @@ class MS_SL_Net(nn.Module):
     def encode_query(self, query_feat, query_mask):
         encoded_query = self.encode_input(query_feat, query_mask, self.query_input_proj, self.query_encoder,
                                           self.query_pos_embed)  # (N, Lq, D)
+        text_features = self.text_head(encoded_query)
         # 论文中的 Attention 操作
         video_query = self.get_modularized_queries(encoded_query, query_mask)  # (N, D) * 1
         # video_query 论文中的 q
-        return video_query
+        return text_features
 
     def encode_context(self, clip_video_feat, frame_video_feat, video_mask=None):
 

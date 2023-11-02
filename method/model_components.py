@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+from abc import abstractmethod
 
 def onehot(indexes, N=None):
     """
@@ -454,3 +455,71 @@ class WindowAttention(nn.Module):
         # x = self.proj(x)
         flops += N * self.dim * self.dim
         return flops
+
+class BaseModel(nn.Module):
+    """
+    Base class for all models
+    """
+    @abstractmethod
+    def forward(self, *inputs):
+        """
+        Forward pass logic
+
+        :return: Model output
+        """
+        raise NotImplementedError
+
+    def __str__(self):
+        """
+        Model prints with number of trainable parameters
+        """
+        model_parameters = filter(lambda p: p.requires_grad, self.parameters())
+        params = sum([np.prod(p.size()) for p in model_parameters])
+        return super().__str__() + '\nTrainable parameters: {}'.format(params)
+
+
+class FCNet(BaseModel):
+    def __init__(self, dim_list, last_nonlinear=False, layer_norm=False):
+        super().__init__()
+
+        if len(dim_list) >= 2:
+            layers = []
+            for i in range(len(dim_list) - 1):
+                layers.append(nn.Linear(dim_list[i], dim_list[i + 1]))
+                if layer_norm:
+                    layers.append(nn.LayerNorm(dim_list[i + 1]))
+                layers.append(nn.ReLU())
+
+            if not last_nonlinear:
+                layers = layers[:-1]
+                if layer_norm:
+                    layers = layers[:-1]
+
+            self.model = nn.Sequential(*layers)
+        else:
+            self.model = nn.Identity()
+
+    def forward(self, x):
+        return self.model(x)
+
+class ContextualizedWeightedHead(BaseModel):
+    def __init__(self, d_model, nhead, num_layers, fc_dim_list, temperature=1.,
+                 device=torch.device('cpu'), layer_norm=False):
+        super().__init__()
+        encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead)
+        self.attention = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        self.head = FCNet(fc_dim_list, last_nonlinear=False, layer_norm=layer_norm)
+        self.temperature = temperature
+
+    def forward(self, text_features):
+        attention_out = self.attention(text_features)
+        weight = self.head(attention_out)
+        weight = F.softmax(weight / self.temperature, dim=1)
+        weighted_text_features = text_features * weight
+        return weighted_text_features.mean(dim=1)
+
+    def gen_weights(self, text_features):
+        attention_out = self.attention(text_features)
+        weight = self.head(attention_out)
+        weight = F.softmax(weight / self.temperature, dim=1)
+        return weight
