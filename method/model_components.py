@@ -112,45 +112,24 @@ class TrainablePositionalEncoding2D(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, input_feat):
-        # print(f'input_feat.shape:{input_feat.shape} {input_feat.shape[0]} {input_feat.shape[1]} {input_feat.shape[2]}')
         bsz, height, width, seq_length = input_feat.shape[0], 64, 64, input_feat.shape[1]
         position_ids_height = torch.arange(seq_length, dtype=torch.long, device=input_feat.device)
         position_ids_width = torch.arange(seq_length, dtype=torch.long, device=input_feat.device)
-        # print(f'1position_ids_height.shape:{position_ids_height.shape}')
-        # print(f'1position_ids_width.shape:{position_ids_width.shape}')
         position_ids_height = position_ids_height.unsqueeze(0).unsqueeze(0).repeat(bsz, height, 1)  # (N,H, L)
         position_ids_width = position_ids_width.unsqueeze(0).unsqueeze(0).repeat(bsz, width, 1)  # (N,W, L)
-        # print(f'2position_ids_height.shape:{position_ids_height.shape}')
-        # print(f'2position_ids_width.shape:{position_ids_width.shape}')
-
         position_embeddings_height = self.position_embeddings_height(position_ids_height)  # (N, H, L, hidden_size)
         position_embeddings_width = self.position_embeddings_width(position_ids_width)  # (N, W, L, hidden_size)
-        # print(f'3position_embeddings_height.shape:{position_embeddings_height.shape}')
-        # print(f'3position_embeddings_width.shape:{position_embeddings_width.shape}')
-        # position_embeddings_height = position_embeddings_height.unfold(2, 2, 2).mean(2)
-        # position_embeddings_width = position_embeddings_width.unfold(2, 2, 2).mean(2)
-        # print(f'3.1position_embeddings_height.shape:{position_embeddings_height.shape}')
-        # print(f'3.1position_embeddings_width.shape:{position_embeddings_width.shape}')
         position_embeddings = position_embeddings_height + position_embeddings_width
-        # print(f'4position_embeddings.shape:{position_embeddings.shape}')
         position_embeddings = position_embeddings.view(bsz, -1, input_feat.shape[-1])  # (B, H*W, d)
-        # print(f'4.1position_embeddings.shape:{position_embeddings.shape}')
-
         # 指定您期望的输出尺寸
         output_size = (input_feat.shape[1], input_feat.shape[2])
-
         # 计算高度和宽度的压缩因子
         height_compress = position_embeddings.shape[1] // output_size[0]
         width_compress = position_embeddings.shape[2] // output_size[1]
-
         # 使用平均池化进行压缩
         position_embeddings = F.avg_pool2d(position_embeddings, (height_compress, width_compress))
-        # print("pooled_tensor shape:", pooled_tensor.shape)
-
         position_embeddings = position_embeddings.view(input_feat.shape[0], input_feat.shape[1], input_feat.shape[2])
 
-        # print(f'6position_embeddings.shape:{position_embeddings.shape}')
-        # print(f'7input_feat.shape:{input_feat.shape}')
         embeddings = self.LayerNorm(input_feat + position_embeddings)
         embeddings = self.dropout(embeddings)
         return embeddings

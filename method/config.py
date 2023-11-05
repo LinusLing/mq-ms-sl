@@ -87,7 +87,7 @@ class BaseOptions(object):
         # post processing
 
         self.parser.add_argument("--model_name", type=str, default='MS_SL_Net')
-        self.parser.add_argument('--root_path', type=str, default='/home/featurize/data')
+        self.parser.add_argument('--root_path', type=str, default='D:\\PRVR_dataset')
         self.parser.add_argument('--visual_feature', type=str, default='i3d_rgb_lgi')
         self.parser.add_argument('--collection', type=str, default='charades')
         self.parser.add_argument("--map_size", type=int, default=32)

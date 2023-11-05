@@ -3,7 +3,7 @@ visual_feature=i3d_rgb_lgi
 clip_scale_w=0.5
 frame_scale_w=0.5
 exp_id=run_0
-root_path=/home/featurize/data
+root_path=D:\\PRVR_dataset
 device_ids=0
 # training
 

@@ -28,12 +28,12 @@ class MS_SL_Net(nn.Module):
         #self.frame_pos_embed = TrainablePositionalEncoding(max_position_embeddings=config.max_ctx_l,
         #                                                  hidden_size=config.hidden_size, dropout=config.input_drop)
         args = {
-                    "d_model": 512,
+                    "d_model": 384,
                     "nhead": 8,
                     "num_layers": 2,
                     "fc_dim_list": [
-                        512,
-                        512,
+                        384,
+                        384,
                         1
                     ]
                 }
