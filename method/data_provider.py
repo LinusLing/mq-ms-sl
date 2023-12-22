@@ -16,7 +16,7 @@ def clean_str(string):
 
 def read_video_ids(cap_file):
     video_ids_list = []
-    with open(cap_file, 'r') as cap_reader:
+    with open(cap_file, 'r', encoding='utf-8') as cap_reader:
         for line in cap_reader.readlines():
             cap_id, caption = line.strip().split(' ', 1)
             video_id = getVideoId(cap_id)
@@ -286,7 +286,7 @@ class TxtDataSet4MS_SL(data.Dataset):
         # Captions
         self.captions = {}
         self.cap_ids = []
-        with open(cap_file, 'r') as cap_reader:
+        with open(cap_file, 'r', encoding='utf-8') as cap_reader:
             for line in cap_reader.readlines():
                 cap_id, caption = line.strip().split(' ', 1)
                 self.captions[cap_id] = caption
