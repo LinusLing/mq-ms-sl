@@ -10,7 +10,7 @@
   * [Model Training](#Training-1)
   * [Model Evaluation](#Evaluation-1)
   * [Expected Performance](#Expected-Performance-1)
-* [MS-SL on Charades-STA](#MQ-MS-SL-on-Charades-STA)
+* [MQ-MS-SL on Charades-STA](#MQ-MS-SL-on-Charades-STA)
   * [Required Data](#Required-Data-2)
   * [Model Training](#Training-2)
   * [Model Evaluation](#Evaluation-2)
