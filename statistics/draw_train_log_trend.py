@@ -11,7 +11,9 @@ frame_nce_losses = []
 frame_trip_losses = []
 loss_overalls = []
 
-base_path = r'D:\PRVR_dataset\charades\results\charades-run_0-2023_11_05_13_34_49'
+folder_name = 'charades-run_0-2023_11_08_12_52_00'
+
+base_path = fr'D:\PRVR_dataset\{folder_name.split("-")[0]}\results\{folder_name}'
 
 # 打开日志文件并逐行解析
 with open(os.path.join(base_path, 'train.log.txt'), 'r') as file:
