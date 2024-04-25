@@ -7,9 +7,19 @@ folder_list = ['activitynet', 'charades', 'tvr']
 # 遍历 folder_list 元素名称对应文件夹中的 results 文件夹
 for folder in folder_list:
     folder_path = os.path.join(root_path, folder, 'results')
+
+    # 如果文件夹不存在，则跳过
+    if not os.path.exists(folder_path):
+        continue
+
     # 遍历 folder_path 中的所有文件夹
     for file in os.listdir(folder_path):
         file_path = os.path.join(folder_path, file)
+
+        # 如果不是文件夹，则跳过
+        if not os.path.isdir(file_path):
+            continue
+
         # 如果 model.ckpt 不在该文件夹中，则删除该文件夹
         if 'model.ckpt' not in os.listdir(file_path):
             # 强行删除文件夹
